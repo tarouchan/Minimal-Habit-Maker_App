@@ -52,7 +52,7 @@ def go_to_step(step_num: int) -> None:
 
 def show_step_1():
     st.header("① 習慣化したいことを入力してください")
-    habit = st.text_input("習慣化したいこと", key="habit", placeholder="例：筋トレを習慣にしたい")
+    habit = st.text_input("", key="habit", placeholder="例：筋トレを習慣にしたい")
 
     if st.button("次へ進む", key="next_1"):
         if habit and habit.strip():
@@ -67,7 +67,7 @@ def show_step_2():
     st.write("「こんなの意味ある？」くらい小さくて大丈夫です。")
 
     start_small = st.text_input(
-        "どこから始められそうですか？",
+        "",
         key="start_small",
         placeholder="例：腕立て1回だけ、5分だけ本を開く など",
     )
@@ -77,10 +77,11 @@ def show_step_2():
         st.session_state.show_example_2 = not bool(st.session_state.get("show_example_2"))
 
     if st.session_state.get("show_example_2"):
+        # Markdownの改行（行末スペース2つ）で確実に改行される
         st.info(
-            "例：\n"
-            "・ランニング → ランニングウェアに着替えるだけ\n"
-            "・ランニング → 外に出て3歩だけ歩く"
+            "【例】  \n"
+            "・ランニング → ランニングウェアに着替えるだけ  \n"
+            "・筋トレ → 腕立て1回だけ"
         )
 
     if st.button("次へ進む", key="next_2"):
@@ -111,7 +112,7 @@ def show_step_3():
 
     if st.button("次へ進む", key="next_3"):
         if choice == "このくらいなら始められそう":
-            go_to_step(7)
+            go_to_step(4)
         else:
             st.info("とても良い感覚です。もう一段、小さく優しくしてみましょう。")
             go_to_step(2)
@@ -119,23 +120,22 @@ def show_step_3():
 
 def show_step_4():
     st.header("④ 20秒以内に始めるために、できる準備はありますか？")
-    st.write("「始めるまでのハードル」をできるだけ下げておきましょう。")
 
     prep = st.text_input(
-        "20秒以内でできる準備",
+        "",
         key="prep",
-        placeholder="例：前日にウェアを出しておく、道具を机の上に置いておく など",
+        placeholder="例：前日にウェアを出しておく など",
     )
 
-    if st.button("例を見る", key="example_7_button"):
-        st.session_state.show_example_7 = not bool(st.session_state.get("show_example_7"))
+    if st.button("例を見る", key="example_4_button"):
+        st.session_state.show_example_4 = not bool(st.session_state.get("show_example_4"))
 
-    if st.session_state.get("show_example_7"):
-        st.info("例：\n・前日にウェアを出しておく\n・道具を机の上に置いておく")
+    if st.session_state.get("show_example_4"):
+        st.info("【例】  \n・タスクリストをデスクに置く  \n・道具を机の上に置いておく")
 
-    if st.button("次へ進む", key="next_7"):
+    if st.button("次へ進む", key="next_4"):
         st.session_state.prep_saved = (prep or "").strip()
-        go_to_step(8)
+        go_to_step(5)
 
 
 def show_step_5():
@@ -143,23 +143,26 @@ def show_step_5():
     st.write("お金がかからない、小さなご褒美でOKです。")
 
     reward = st.text_input(
-        "ご褒美",
+        "",
         key="reward",
         placeholder="例：チェックを付ける、好きな音楽を1分聴く など",
     )
 
-    if st.button("次へ進む", key="next_8"):
+    if st.button("次へ進む", key="next_5"):
         st.session_state.reward_saved = (reward or "").strip()
-        go_to_step(9)
+        go_to_step(6)
 
 
 def show_step_6_summary():
     st.header("⑥ これまでの回答を振り返りましょう")
 
-    # 冒頭にメッセージを表示
-    st.write(
-        "サボってしまっても、再開すればそれも『継続』です。\n"
+    # 冒頭にメッセージを赤色で目立つように表示
+    st.markdown(
+        '<p style="color: #c62828; font-size: 1.05rem; font-weight: 500;">'
+        "サボってしまっても、再開すればそれも『継続』です。<br>"
         "自分を責めずに、無理なく習慣化していきましょうね。"
+        "</p>",
+        unsafe_allow_html=True,
     )
 
     habit = st.session_state.get("habit_saved") or st.session_state.get("habit") or ""
@@ -179,17 +182,17 @@ def show_step_6_summary():
         or "（特になし）"
     )
 
-    st.subheader("今回のテーマとなる習慣")
+    st.subheader("今回の習慣化したいこと")
     st.info(habit or "まだ入力されていません")
 
-    st.subheader("最初の一歩（できるだけ小さく）")
+    st.subheader("小さく始めるための一歩")
     st.info(start_small or "まだ入力されていません")
 
     st.subheader("20秒以内に始めるための準備")
-    st.write(prep)
+    st.info(prep)
 
     st.subheader("行動できたときのご褒美")
-    st.write(reward)
+    st.info(reward)
 
     # 最初からやり直したいときのボタン
     if st.button("もう一度はじめから考えてみる", key="restart"):
@@ -221,12 +224,12 @@ def main():
         show_step_2()
     elif step == 3:
         show_step_3()
-    elif step == 7:
-        show_step_7()
-    elif step == 8:
-        show_step_8()
-    elif step == 9:
-        show_step_9_summary()
+    elif step == 4:
+        show_step_4()
+    elif step == 5:
+        show_step_5()
+    elif step == 6:
+        show_step_6_summary()
     else:
         # 想定外の値になっていた場合は最初のステップに戻す
         st.session_state.step = 1
