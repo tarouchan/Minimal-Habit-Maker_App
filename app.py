@@ -12,6 +12,7 @@ def init_session_state():
 
     # 各質問の回答を session_state に確保しておく
     for key in [
+        # ウィジェットの生の値
         "habit",
         "start_small",
         "confirm_size",
@@ -20,11 +21,29 @@ def init_session_state():
         "place_fixed",
         "prep",
         "reward",
+        # 「次へ進む」を押したタイミングで確定させた値
+        "habit_saved",
+        "start_small_saved",
+        "anchor_saved",
+        "time_fixed_saved",
+        "place_fixed_saved",
+        "prep_saved",
+        "reward_saved",
+        # 表示用フラグ
         "show_example_2",
         "show_example_4",
         "show_example_7",
     ]:
         st.session_state.setdefault(key, None)
+
+
+def go_to_step(step_num: int) -> None:
+    """ステップを更新し、即座に画面を切り替える（1クリックで次へ進むため）。"""
+    st.session_state.step = step_num
+    try:
+        st.rerun()
+    except AttributeError:
+        st.experimental_rerun()
 
 
 # -----------------------------------------------------------------------------
@@ -37,14 +56,15 @@ def show_step_1():
 
     if st.button("次へ進む", key="next_1"):
         if habit and habit.strip():
-            st.session_state.step = 2
+            st.session_state.habit_saved = habit.strip()
+            go_to_step(2)
         else:
             st.warning("まずは、習慣化したいことを一言で書いてみましょう。")
 
 
 def show_step_2():
     st.header("② 小さく始めるのがコツですが、どこからなら始められそうですか？")
-    st.write("「こんなん意味ないかも？」くらい小さくて大丈夫です。")
+    st.write("「こんなの意味ある？」くらい小さくて大丈夫です。")
 
     start_small = st.text_input(
         "どこから始められそうですか？",
@@ -65,7 +85,8 @@ def show_step_2():
 
     if st.button("次へ進む", key="next_2"):
         if start_small and start_small.strip():
-            st.session_state.step = 3
+            st.session_state.start_small_saved = start_small.strip()
+            go_to_step(3)
         else:
             st.warning("「これならできそう」という小さな一歩を書いてみましょう。")
 
@@ -73,7 +94,11 @@ def show_step_2():
 def show_step_3():
     st.header("③ ここからなら始められそうですか？")
 
-    current = st.session_state.get("start_small") or "（まだ入力されていません）"
+    current = (
+        st.session_state.get("start_small_saved")
+        or st.session_state.get("start_small")
+        or "（まだ入力されていません）"
+    )
     st.write("いま考えている一歩：")
     st.info(current)
 
@@ -86,68 +111,14 @@ def show_step_3():
 
     if st.button("次へ進む", key="next_3"):
         if choice == "このくらいなら始められそう":
-            st.session_state.step = 4
+            go_to_step(7)
         else:
             st.info("とても良い感覚です。もう一段、小さく優しくしてみましょう。")
-            st.session_state.step = 2
+            go_to_step(2)
+
 
 def show_step_4():
-    # ①で入力された習慣名をタイトルに差し込む
-    habit = (st.session_state.get("habit") or "").strip()
-    if habit:
-        title = f"④ 今回の「{habit}」と結びつけられそうな、すでにある習慣行動はありますか？"
-    else:
-        # 念のため未入力でも自然な文になるようにする
-        title = "④ 今回の習慣と結びつけられそうな、すでにある習慣行動はありますか？"
-
-    st.header(title)
-    st.write("「〜したあとにやる」と決めると、スイッチが入りやすくなります。")
-
-    anchor = st.text_input(
-        "すでにある習慣行動",
-        key="anchor_habit",
-        placeholder="例：歯磨きのあと、外の植物に水をあげたあと など",
-    )
-
-    if st.button("例を見る", key="example_4_button"):
-        st.session_state.show_example_4 = not bool(st.session_state.get("show_example_4"))
-
-    if st.session_state.get("show_example_4"):
-        st.info("例：\n・歯磨きのあと\n・外の植物に水をあげたあと")
-
-    if st.button("次へ進む", key="next_4"):
-        # ここは「ない」でもOKなので、必須入力にはしない
-        st.session_state.step = 5
-
-
-def show_step_5():
-    st.header("⑤ その習慣を行う時間はだいたい決まっていますか？")
-
-    time_fixed = st.radio(
-        "感覚に近い方を選んでください",
-        ["決まっている", "決まっていない"],
-        key="time_fixed",
-    )
-
-    if st.button("次へ進む", key="next_5"):
-        st.session_state.step = 6
-
-
-def show_step_6():
-    st.header("⑥ 今回の習慣は、場所を固定できそうですか？")
-
-    place_fixed = st.radio(
-        "感覚に近い方を選んでください",
-        ["できそう", "難しそう"],
-        key="place_fixed",
-    )
-
-    if st.button("次へ進む", key="next_6"):
-        st.session_state.step = 7
-
-
-def show_step_7():
-    st.header("⑦ 20秒以内に始めるために、できる準備はありますか？")
+    st.header("④ 20秒以内に始めるために、できる準備はありますか？")
     st.write("「始めるまでのハードル」をできるだけ下げておきましょう。")
 
     prep = st.text_input(
@@ -163,11 +134,12 @@ def show_step_7():
         st.info("例：\n・前日にウェアを出しておく\n・道具を机の上に置いておく")
 
     if st.button("次へ進む", key="next_7"):
-        st.session_state.step = 8
+        st.session_state.prep_saved = (prep or "").strip()
+        go_to_step(8)
 
 
-def show_step_8():
-    st.header("⑧ 実際に行動できた時のご褒美を決めましょう")
+def show_step_5():
+    st.header("⑤ 実際に行動できた時のご褒美を決めましょう")
     st.write("お金がかからない、小さなご褒美でOKです。")
 
     reward = st.text_input(
@@ -177,19 +149,35 @@ def show_step_8():
     )
 
     if st.button("次へ進む", key="next_8"):
-        st.session_state.step = 9
+        st.session_state.reward_saved = (reward or "").strip()
+        go_to_step(9)
 
 
-def show_step_9_summary():
-    st.header("⑨ これまでの回答を振り返りましょう")
+def show_step_6_summary():
+    st.header("⑥ これまでの回答を振り返りましょう")
 
-    habit = st.session_state.get("habit") or ""
-    start_small = st.session_state.get("start_small") or ""
-    anchor = st.session_state.get("anchor_habit") or "（特になし）"
-    time_fixed = st.session_state.get("time_fixed") or "（未回答）"
-    place_fixed = st.session_state.get("place_fixed") or "（未回答）"
-    prep = st.session_state.get("prep") or "（特になし）"
-    reward = st.session_state.get("reward") or "（特になし）"
+    # 冒頭にメッセージを表示
+    st.write(
+        "サボってしまっても、再開すればそれも『継続』です。\n"
+        "自分を責めずに、無理なく習慣化していきましょうね。"
+    )
+
+    habit = st.session_state.get("habit_saved") or st.session_state.get("habit") or ""
+    start_small = (
+        st.session_state.get("start_small_saved")
+        or st.session_state.get("start_small")
+        or ""
+    )
+    prep = (
+        st.session_state.get("prep_saved")
+        or st.session_state.get("prep")
+        or "（特になし）"
+    )
+    reward = (
+        st.session_state.get("reward_saved")
+        or st.session_state.get("reward")
+        or "（特になし）"
+    )
 
     st.subheader("今回のテーマとなる習慣")
     st.info(habit or "まだ入力されていません")
@@ -197,35 +185,19 @@ def show_step_9_summary():
     st.subheader("最初の一歩（できるだけ小さく）")
     st.info(start_small or "まだ入力されていません")
 
-    st.subheader("結びつける既存の習慣")
-    st.write(anchor)
-
-    st.subheader("時間・場所のイメージ")
-    st.write(f"- 時間のイメージ：{time_fixed}")
-    st.write(f"- 場所を固定できそうか：{place_fixed}")
-
     st.subheader("20秒以内に始めるための準備")
     st.write(prep)
 
     st.subheader("行動できたときのご褒美")
     st.write(reward)
 
-    if st.button("次へ進む", key="next_9"):
-        st.session_state.step = 10
-
-
-def show_step_10_message():
-    st.header("⑩ 最後にひとこと")
-
-    st.write(
-        "サボってしまっても、再開すればそれも『継続』です。\n"
-        "自分を責めずに、無理なく習慣化していきましょうね。"
-    )
-
     # 最初からやり直したいときのボタン
     if st.button("もう一度はじめから考えてみる", key="restart"):
-        # 回答は残したまま step だけ戻すことで、安心してやり直せる
         st.session_state.step = 1
+        try:
+            st.rerun()
+        except AttributeError:
+            st.experimental_rerun()
 
 
 # -----------------------------------------------------------------------------
@@ -234,10 +206,10 @@ def show_step_10_message():
 
 
 def main():
-    st.set_page_config(page_title="最小習慣メーカー（試作版）", layout="centered")
+    st.set_page_config(page_title="『続けられる』習慣メーカー", layout="centered")
     init_session_state()
 
-    st.title("最小習慣メーカー（試作版）")
+    st.title("『続けられる』習慣メーカー")
     st.caption("習慣化が苦手な人のための、やさしい一問一答ウィザードです。")
 
     step = st.session_state.step
@@ -249,12 +221,6 @@ def main():
         show_step_2()
     elif step == 3:
         show_step_3()
-    elif step == 4:
-        show_step_4()
-    elif step == 5:
-        show_step_5()
-    elif step == 6:
-        show_step_6()
     elif step == 7:
         show_step_7()
     elif step == 8:
@@ -262,7 +228,9 @@ def main():
     elif step == 9:
         show_step_9_summary()
     else:
-        show_step_10_message()
+        # 想定外の値になっていた場合は最初のステップに戻す
+        st.session_state.step = 1
+        show_step_1()
 
 
 if __name__ == "__main__":
